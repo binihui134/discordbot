@@ -127,4 +127,5 @@ dist
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-echo "secrets.env" >> .gitignore
+echo ".env.examples" >> .gitignore
+.env
