@@ -1,10 +1,11 @@
-const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
 
-// Load environment variables from secrets.env file
-dotenv.config({ path: './secrets.env' });
+const dotenv = require('dotenv');
+dotenv.config();
 
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENTID;
@@ -12,8 +13,7 @@ const clientId = process.env.CLIENTID;
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 client.commands = new Collection();
 
-// Command handling setup
-const commandsPath = path.join(__dirname, 'commands');
+const commandsPath = path.resolve(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
@@ -21,11 +21,9 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// When the bot is ready
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
-    // Register global slash commands
     const rest = new REST({ version: '9' }).setToken(token);
 
     try {
@@ -33,27 +31,26 @@ client.once('ready', async () => {
 
         await rest.put(
             Routes.applicationCommands(clientId),
-            { body: Array.from(client.commands.values()).map(command => command.data.toJSON()) },
+            { body: client.commands.map(command => command.data.toJSON()) }
         );
 
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-        console.error(error);
+        console.error('Error refreshing application commands:', error);
     }
 });
 
-// Interaction handling
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
-    const { commandName } = interaction;
+    const command = client.commands.get(interaction.commandName);
 
-    if (!client.commands.has(commandName)) return;
+    if (!command) return;
 
     try {
-        await client.commands.get(commandName).execute(interaction);
+        await command.execute(interaction);
     } catch (error) {
-        console.error(error);
+        console.error('Error executing command:', error);
         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
     }
 });
