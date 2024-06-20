@@ -4,9 +4,7 @@ const path = require('path');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 
-const dotenv = require('dotenv');
-dotenv.config();
-
+// Load environment variables from Railway
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENTID;
 
